@@ -15,4 +15,5 @@ services:
 
     volumes:
       - "$HOME/data/mnist_gnn:/home/mtx/data"
+      - ".:/home/mtx/code"
 #   command: ["bash"]
