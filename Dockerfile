@@ -9,7 +9,7 @@ RUN groupadd -g $GID -o $UNAME
 RUN useradd -r -u $UID -g $GID -o -d /home/$UNAME -s /bin/bash -p '$1$TRYvpNbr$XfFU1QixEe4rup6g7izUU.' $UNAME && adduser $UNAME sudo
 
 RUN apt update -y &&\
-    apt install -y sudo vim
+    apt install -y sudo vim proxychains
 
 ADD ./ /home/$UNAME/code
 RUN mkdir /home/$UNAME/data
