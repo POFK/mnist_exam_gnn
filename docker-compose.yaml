@@ -1,0 +1,18 @@
+version: '3.3'
+services:
+  exam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mnist-gnn
+    container_name: mnist-gnn
+    stdin_open: true
+    tty: true
+    user: mtx
+#   restart: always
+#   ports:
+#     - "28888:8888"
+
+    volumes:
+      - "$HOME/data/mnist_gnn:/home/mtx/data"
+#   command: ["bash"]
