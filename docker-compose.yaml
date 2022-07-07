@@ -7,6 +7,7 @@ services:
     image: mnist-gnn:v0.1.0
     container_name: mnist-gnn
     network_mode: host
+    shm_size: '32gb'
     stdin_open: true
     tty: true
     user: mtx
