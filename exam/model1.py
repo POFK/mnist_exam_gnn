@@ -19,8 +19,8 @@ from dataset import CustomMNISTDataset
 
 #dataset = GNNBenchmarkDataset(root='/config/data/gnn-MNIST', name='MNIST')
 dataset = CustomMNISTDataset(root=os.path.join(os.path.expanduser('~'),"data"))
-train_loader = DataLoader(dataset[:50000], batch_size=32, shuffle=True, num_workers=4)
-test_loader = DataLoader(dataset[55000:], batch_size=5000, shuffle=False, num_workers=4)
+train_loader = DataLoader(dataset[:50000], batch_size=1024, shuffle=True, num_workers=1)
+test_loader = DataLoader(dataset[55000:], batch_size=1000, shuffle=False, num_workers=1)
 
 
 class GCN(torch.nn.Module):
@@ -88,7 +88,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #model = GCN().to(device)
 model = Net().to(device)
 #data = dataset[0].to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-2, weight_decay=5e-4)
 #optimizer = torch.optim.Adam(model.parameters())
 criterion = nn.CrossEntropyLoss()
 
@@ -116,8 +116,13 @@ for epoch in range(250):
 
 
     model.eval()
+    CORR = 0
+    CNT = 0
     for data in test_loader:
+        data = data.to(device)
         pred = model(data).argmax(dim=1)
         correct = (pred == data.y).sum()
-        acc = int(correct) / len(data.y)
-        print(f'Epoch {epoch} | Accuracy: {acc:.4f}, training loss: {LOSS/50000}')
+        CORR += int(correct)
+        CNT += len(data.y)
+    acc = CORR/CNT
+    print(f'Epoch {epoch} | Accuracy: {acc:.4f}, training loss: {LOSS/50000}')
