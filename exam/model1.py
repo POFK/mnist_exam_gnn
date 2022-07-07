@@ -19,8 +19,8 @@ from dataset import CustomMNISTDataset
 
 #dataset = GNNBenchmarkDataset(root='/config/data/gnn-MNIST', name='MNIST')
 dataset = CustomMNISTDataset(root=os.path.join(os.path.expanduser('~'),"data"))
-train_loader = DataLoader(dataset[:50000], batch_size=1024, shuffle=True, num_workers=1)
-test_loader = DataLoader(dataset[55000:], batch_size=1000, shuffle=False, num_workers=1)
+train_loader = DataLoader(dataset[:50000], batch_size=1024, shuffle=True, num_workers=4)
+test_loader = DataLoader(dataset[55000:], batch_size=1000, shuffle=False, num_workers=4)
 
 
 class GCN(torch.nn.Module):
