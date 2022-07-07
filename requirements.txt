@@ -1,0 +1,17 @@
+# Packages required for basic usage of `illustris_python` package
+numpy
+h5py
+six
+
+# Packages required for unit tests
+pytest
+coverage
+
+# torch geometric
+#--find-links https://data.pyg.org/whl/torch-1.11.0+cpu.html
+--find-links https://data.pyg.org/whl/torch-1.11.0+cu113.html
+torch-scatter
+torch-sparse
+torch-cluster
+torch-spline-conv
+torch-geometric
