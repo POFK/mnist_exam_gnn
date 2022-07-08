@@ -84,6 +84,21 @@ def prepare(ds, rank, world_size, batch_size=32, pin_memory=True, num_workers=0,
 #train_loader = DataLoader(dataset[:50000], batch_size=1024, shuffle=True, num_workers=4)
 #test_loader = DataLoader(dataset[55000:], batch_size=1000, shuffle=False, num_workers=4)
 
+def save_checkpoint(rank, ddp_model, opt, epoch, cpt_path=None):
+    cpt_path = cpt_path if cpt_path else tempfile.gettempdir() + "/model.checkpoint"
+    cpt_data = {
+            'epoch': epoch,
+            'model_state_dict': ddp_model.state_dict(),
+            'optimizer_state_dict': opt.state_dict(),
+            }
+    if rank == 0:
+        # All processes should see same parameters as they all start from same
+        # random parameters and gradients are synchronized in backward passes.
+        # Therefore, saving it in one process is sufficient.
+        torch.save(cpt_data, cpt_path)
+    dist.barrier()
+
+    return cpt_path
 
 def step(rank, epoch, model, optimizer, loss_fn, train_loader, test_loader):
     model.train()
@@ -100,10 +115,8 @@ def step(rank, epoch, model, optimizer, loss_fn, train_loader, test_loader):
         CNT += len(data.y)
         loss.backward()
         optimizer.step()
-        t.set_description(f"rank-{rank:02d}, epoch-{epoch:03d} loss: {LOSS/CNT:.5f}")
+        t.set_description(f"rank-{rank:02d}, epoch-{epoch:03d} loss: {loss:.5f}")
         t.refresh() # to show immediately the update
-
-
     model.eval()
     CORR = 0
     CNT_test = 0
@@ -116,7 +129,7 @@ def step(rank, epoch, model, optimizer, loss_fn, train_loader, test_loader):
     acc = CORR/CNT_test
     print(f'rank-{rank:02d}, Epoch {epoch} | Accuracy: {acc:.4f}, training loss: {LOSS/CNT}')
 
-def demo_basic(rank, world_size, bs):
+def demo_basic(rank, world_size, bs, init=True):
     print(f"Running basic DDP example on rank {rank} of {world_size}.")
     setup(rank, world_size)
     train_loader = prepare(dataset[:50000], rank, world_size, batch_size=bs, shuffle=True)
@@ -125,26 +138,42 @@ def demo_basic(rank, world_size, bs):
     # create model and move it to GPU with id rank
     model = Net().to(rank)
     ddp_model = DDP(model, device_ids=[rank])
-
     loss_fn = nn.CrossEntropyLoss()
+#   optimizer = torch.optim.SGD(ddp_model.parameters(), lr=1e-2)
     optimizer = torch.optim.Adam(ddp_model.parameters(), lr=1e-2, weight_decay=5e-4)
 
+    EPOCH_BEGIN = 0
+
+    if not init:
+        CHECKPOINT_PATH = tempfile.gettempdir() + "/model.checkpoint"
+        map_location = {'cuda:%d' % 0: 'cuda:%d' % rank}
+        checkpoint = torch.load(CHECKPOINT_PATH, map_location=map_location)
+        ddp_model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        EPOCH_BEGIN += checkpoint['epoch'] + 1
+        dist.barrier()
 
     for epoch in range(250):
         train_loader.sampler.set_epoch(epoch)
         test_loader.sampler.set_epoch(epoch)
-        step(rank, epoch, ddp_model, optimizer, loss_fn, train_loader, test_loader)
+        step(rank, EPOCH_BEGIN+epoch, ddp_model, optimizer, loss_fn, train_loader, test_loader)
+        CHECKPOINT_PATH = save_checkpoint(rank, ddp_model, optimizer, EPOCH_BEGIN+epoch)
+
+    if rank == 0:
+        os.remove(CHECKPOINT_PATH)
 
     cleanup()
 
 
-def run_demo(demo_fn, world_size, bs):
+def run_demo(demo_fn, *args):
     mp.spawn(demo_fn,
-             args=(world_size, bs),
-             nprocs=world_size,
+             args=args,
+             nprocs=args[0],
              join=True)
 
 if __name__ == '__main__':
+#   fname="model.pt"
+#   model_path = os.path.join(os.path.expanduser('~'),f"data/models/{fname}")
     #run_demo(demo_basic, torch.cuda.device_count())
-    run_demo(demo_basic, 1, 1000)
+    run_demo(demo_basic, 1, 1000, False)
     #run_demo(demo_basic, 4, 4000)
