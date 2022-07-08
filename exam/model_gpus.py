@@ -1,31 +1,25 @@
 #!/usr/bin/env python3
 
-import sys
+import os
+import tqdm
 import tempfile
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import torch.distributed as dist
-import torch.optim as optim
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
-
-import os
-import tqdm
 from torch_geometric.loader import DataLoader
-from torch_geometric.datasets import Planetoid, GNNBenchmarkDataset
-
-
-import torch
-from torch import nn
-import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-from torch_scatter import scatter_max, scatter_mean
+from torch_scatter import scatter_max
 
 from dataset import CustomMNISTDataset
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
-
     # initialize the process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
