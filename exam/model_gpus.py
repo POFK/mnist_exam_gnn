@@ -6,6 +6,7 @@ import torch.distributed as dist
 import torch.optim as optim
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data.distributed import DistributedSampler
 
 import os
 import tqdm
@@ -73,16 +74,24 @@ class Net(torch.nn.Module):
 
 #dataset = GNNBenchmarkDataset(root='/config/data/gnn-MNIST', name='MNIST')
 dataset = CustomMNISTDataset(root=os.path.join(os.path.expanduser('~'),"data"))
-train_loader = DataLoader(dataset[:50000], batch_size=1024, shuffle=True, num_workers=4)
-test_loader = DataLoader(dataset[55000:], batch_size=1000, shuffle=False, num_workers=4)
 
-def step(model, optimizer, loss_fn):
+def prepare(ds, rank, world_size, batch_size=32, pin_memory=True, num_workers=0, shuffle=False):
+    dataset = ds
+    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=shuffle, drop_last=False)
+    dataloader = DataLoader(dataset, batch_size=batch_size, pin_memory=pin_memory, num_workers=num_workers, drop_last=False, shuffle=False, sampler=sampler)
+    return dataloader
+
+#train_loader = DataLoader(dataset[:50000], batch_size=1024, shuffle=True, num_workers=4)
+#test_loader = DataLoader(dataset[55000:], batch_size=1000, shuffle=False, num_workers=4)
+
+
+def step(rank, epoch, model, optimizer, loss_fn, train_loader, test_loader):
     model.train()
     LOSS = 0
     CNT = 0
     t = tqdm.tqdm(train_loader)
     for data in t:
-        data = data.to(device)
+        data = data.to(rank)
         optimizer.zero_grad()
         out = model(data)
 #       loss = F.nll_loss(out, data.y)
@@ -91,25 +100,27 @@ def step(model, optimizer, loss_fn):
         CNT += len(data.y)
         loss.backward()
         optimizer.step()
-        t.set_description(f"epoch-{epoch:03d} loss: {LOSS/CNT:.5f}")
+        t.set_description(f"rank-{rank:02d}, epoch-{epoch:03d} loss: {LOSS/CNT:.5f}")
         t.refresh() # to show immediately the update
 
 
     model.eval()
     CORR = 0
-    CNT = 0
+    CNT_test = 0
     for data in test_loader:
-        data = data.to(device)
+        data = data.to(rank)
         pred = model(data).argmax(dim=1)
         correct = (pred == data.y).sum()
         CORR += int(correct)
-        CNT += len(data.y)
-    acc = CORR/CNT
-    print(f'Epoch {epoch} | Accuracy: {acc:.4f}, training loss: {LOSS/50000}')
+        CNT_test += len(data.y)
+    acc = CORR/CNT_test
+    print(f'rank-{rank:02d}, Epoch {epoch} | Accuracy: {acc:.4f}, training loss: {LOSS/CNT}')
 
-def demo_basic(rank, world_size):
-    print(f"Running basic DDP example on rank {rank}.")
+def demo_basic(rank, world_size, bs):
+    print(f"Running basic DDP example on rank {rank} of {world_size}.")
     setup(rank, world_size)
+    train_loader = prepare(dataset[:50000], rank, world_size, batch_size=bs, shuffle=True)
+    test_loader = prepare(dataset[50000:], rank, world_size, batch_size=bs, shuffle=False)
 
     # create model and move it to GPU with id rank
     model = Net().to(rank)
@@ -120,16 +131,20 @@ def demo_basic(rank, world_size):
 
 
     for epoch in range(250):
-        step(ddp_model, optimizer, loss_fn)
+        train_loader.sampler.set_epoch(epoch)
+        test_loader.sampler.set_epoch(epoch)
+        step(rank, epoch, ddp_model, optimizer, loss_fn, train_loader, test_loader)
 
     cleanup()
 
 
-def run_demo(demo_fn, world_size):
+def run_demo(demo_fn, world_size, bs):
     mp.spawn(demo_fn,
-             args=(world_size,),
+             args=(world_size, bs),
              nprocs=world_size,
              join=True)
 
 if __name__ == '__main__':
-    run_demo(demo_basic, 4)
+    #run_demo(demo_basic, torch.cuda.device_count())
+    run_demo(demo_basic, 1, 1000)
+    #run_demo(demo_basic, 4, 4000)
