@@ -39,8 +39,8 @@ services:
     restart: always
     stdin_open: true
     tty: true
-#   command: ["python", "/code/server.py"]
-    command: ["bash"]
+    command: ["python", "/code/server_websocket.py"]
+#   command: ["bash"]
     volumes:
       - "./ui:/code"
     ports:
