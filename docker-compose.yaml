@@ -4,11 +4,12 @@ services:
   redis:
     image: redis:6.2.6
     restart: always
+    container_name: mnist-gnn-db
     expose:
       - '6379'
     command: redis-server # --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-    volumes:
-      - $HOME/data/db/redis:/data
+#   volumes:
+#     - $HOME/data/db/redis:/data
 
   exam:
     build:
@@ -24,8 +25,20 @@ services:
 #   restart: always
 #   ports:
 #     - "28888:8888"
-
     volumes:
       - "$HOME/data/mnist_gnn:/home/mtx/data"
       - ".:/home/mtx/code"
 #   command: ["bash"]
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    image: mnist-gnn-ui:v0.1.0
+    container_name: mnist-gnn-ui
+    restart: always
+    stdin_open: true
+    tty: true
+    command: ["bash"]
+    volumes:
+      - "./ui:/code"
