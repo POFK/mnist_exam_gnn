@@ -39,11 +39,11 @@ function(msg) {
 async def ws():
     while True:
         point = json.loads(db.conn.blpop(name)[1])
+        print(point)
         DATA['epoch'].append(point['epoch'])
         DATA['loss'].append(point['loss'])
         output = json.dumps(DATA)
         await websocket.send(output)
-#       await asyncio.sleep(1)
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0', port=80, debug=True, use_reloader=True)  # Turn off reloader if inside Jupyter

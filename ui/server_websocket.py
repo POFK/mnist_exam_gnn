@@ -14,7 +14,7 @@ def index():
 
 db = DB()
 ds = DataSet()
-name = 'test_ui'
+name = 'test_ui/0'
 
 @sock.route('/echo')
 def echo(sock):

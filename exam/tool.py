@@ -14,9 +14,13 @@ from torch_geometric.loader import DataLoader
 
 from dataset import CustomMNISTDataset
 from model_gpus import Net
+from db import DB
+
+db = DB()
 
 class TaskManager(object):
-    def __init__(self, name="test", *args, **kwargs):
+    def __init__(self, name="test_ui", *args, **kwargs):
+        self.name = name
         self._rank = None
         self._world_size = None
         self._comm_mode = "gloo"
@@ -170,8 +174,14 @@ class TaskManager(object):
     def step(self, train_loader, test_loader):
         tr_cnt, tr_loss = self.step_tr(train_loader)
         te_cnt, te_loss, te_corr = self.step_te(test_loader)
-        if self.rank == 0:
-            self._log_text = f"Epoch {self.epoch:02}: train loss {tr_loss/tr_cnt:.5}, test loss {te_loss/te_cnt:.5}, acc {te_corr/te_cnt:.5}"
+        data = {}
+        data['epoch'] = self.epoch
+        data['tr_loss'] = tr_loss/tr_cnt
+        data['te_loss'] = te_loss/te_cnt
+        data['acc'] = te_corr/te_cnt
+        db.write(opj(self.name, self.rank), data)
+#       if self.rank == 0:
+#           self._log_text = f"Epoch {self.epoch:02}: train loss {tr_loss/tr_cnt:.5}, test loss {te_loss/te_cnt:.5}, acc {te_corr/te_cnt:.5}"
 #       print(f"Epoch(rank {self.rank}) {self.epoch}: loss {te_loss/te_cnt}, acc {te_corr/te_cnt}")
         return self
 
