@@ -2,6 +2,7 @@
 numpy
 h5py
 six
+redis
 
 # Packages required for unit tests
 pytest
