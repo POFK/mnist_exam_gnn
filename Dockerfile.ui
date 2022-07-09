@@ -1,4 +1,8 @@
 FROM python:3.8-slim
 MAINTAINER TX Mao <mtianxiang@gmail.com>
 
-RUN pip install redis
+RUN pip install \
+    --trusted-host nexus.storage.datalab -i http://nexus.storage.datalab/repository/pypi/simple\
+    redis dash pandas plotly async-dash Flask==2.1.0 jinja2==3.0.0 dash_extensions
+
+WORKDIR /code

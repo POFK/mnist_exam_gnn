@@ -39,6 +39,9 @@ services:
     restart: always
     stdin_open: true
     tty: true
+#   command: ["python", "/code/server.py"]
     command: ["bash"]
     volumes:
       - "./ui:/code"
+    ports:
+      - "8050:80"
