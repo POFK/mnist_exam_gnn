@@ -34,6 +34,7 @@ def echo(sock):
             time.sleep(10)
             continue
         point = db.blpop(name)
+        print(point)
         ds.append(point)
         output = json.dumps(ds.data)
         sock.send(output)
