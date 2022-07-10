@@ -19,26 +19,28 @@
       const socket = new WebSocket('ws://' + location.host + '/echo');
       socket.addEventListener('message', ev => {
           msg = JSON.parse(ev.data);
-          var train_loss= [{
+          var trace1 = {
+	      name: "train",
               x: msg.epoch,
               y: msg.tr_loss,
               mode: "lines",
               type: "scatter"
-          }];
+          };
 
-          var test_loss= [{
+          var trace2 = {
+	      name: "test",
               x: msg.epoch,
               y: msg.te_loss,
               mode: "lines",
               type: "scatter"
-          }];
+          };
 
-          var data = [train_loss, test_loss];
+          var data = [trace1, trace2];
 
           var layout = {
               xaxis: {title: "Epoch"},
               yaxis: {title: "Loss"},
-              title: "Loss"
+//            title: "Loss"
           };
           Plotly.newPlot("Loss", data, layout);
       });
