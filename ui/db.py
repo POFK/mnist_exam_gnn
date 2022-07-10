@@ -2,6 +2,7 @@
 
 import json
 import redis
+import time
 
 class DB(object):
     def __init__(self, host='redis', port=6379):
@@ -52,9 +53,14 @@ class DB(object):
         self.child = list(self.conn.scan_iter(key+"/*"))
         return self
 
+    def wait(self, sec):
+        time.sleep(sec)
+        return self
+
     def blpop(self, key):
-        if len(self.child) == 0:
-            self.get_child(key)
+        while len(self.child) == 0:
+            print("Waiting for task running!")
+            self.get_child(key).wait(5)
         attr_comb = {}
         for k in self.child:
             attr = self.conn.blpop(k)[1]

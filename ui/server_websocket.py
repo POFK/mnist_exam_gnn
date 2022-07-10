@@ -31,12 +31,13 @@ def echo(sock):
     while True:
         print("sock called!", db.status["running"])
         if not db.status["running"]:
-            time.sleep(300)
+            time.sleep(10)
             continue
         point = db.blpop(name)
         ds.append(point)
         output = json.dumps(ds.data)
         sock.send(output)
+        time.sleep(0.1)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=True)
