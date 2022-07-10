@@ -45,9 +45,10 @@ class DB(object):
 if __name__ == '__main__':
     db = DB()
     name = "test_ui"
-    for i in range(10):
-        data = {'loss': i, 'acc':i, 'epoch':i}
-        db.write(name, data)
-    data = db.read(name, 0).data
-    print(type(data), data)
-    print(db.read_all(name).data)
+    print(db.conn.scan_iter(name+"/*"))
+#   for i in range(10):
+#       data = {'loss': i, 'acc':i, 'epoch':i}
+#       db.write(name, data)
+#   data = db.read(name, 0).data
+#   print(type(data), data)
+#   print(db.read_all(name).data)
