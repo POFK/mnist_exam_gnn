@@ -21,7 +21,7 @@
           msg = JSON.parse(ev.data);
           var data = [{
               x: msg.epoch,
-              y: msg.loss,
+              y: msg.tr_loss,
               mode: "lines",
               type: "scatter"
           }];
