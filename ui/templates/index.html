@@ -19,12 +19,21 @@
       const socket = new WebSocket('ws://' + location.host + '/echo');
       socket.addEventListener('message', ev => {
           msg = JSON.parse(ev.data);
-          var data = [{
+          var train_loss= [{
               x: msg.epoch,
               y: msg.tr_loss,
               mode: "lines",
               type: "scatter"
           }];
+
+          var test_loss= [{
+              x: msg.epoch,
+              y: msg.te_loss,
+              mode: "lines",
+              type: "scatter"
+          }];
+
+          var data = [train_loss, test_loss];
 
           var layout = {
               xaxis: {title: "Epoch"},
