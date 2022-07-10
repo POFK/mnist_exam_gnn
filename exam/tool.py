@@ -219,11 +219,11 @@ class TaskManager(object):
             if self.rank == 0:
                 t.set_description(self._log_text)
                 t.refresh() # to show immediately the update
-                db.conn.hset("status","epoch",self.epoch)
+                db.conn.hset("status","epoch", self.epoch)
             self._epoch += 1
 
         if self.rank == 0:
-            db.conn.hset("running", "False")
+            db.conn.hset("status", "running", "False")
             os.remove(self.cpt_path)
         self.cleanup()
 
