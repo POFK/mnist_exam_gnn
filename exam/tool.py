@@ -35,7 +35,9 @@ class TaskManager(object):
         self._total_epoch = kwargs.get("EPOCH", 100)
 
         self.device = 'gpu'
-        self._log_text = "" 
+        self._log_text = ""
+        self.status = {"running": "True", "name": self.name, "epoch": 0}
+        db.conn.hset("status", mapping=self.status)
 
     @property
     def rank(self):
@@ -217,9 +219,11 @@ class TaskManager(object):
             if self.rank == 0:
                 t.set_description(self._log_text)
                 t.refresh() # to show immediately the update
+                db.conn.hset("status","epoch",self.epoch)
             self._epoch += 1
 
         if self.rank == 0:
+            db.conn.hset("running": "False")
             os.remove(self.cpt_path)
         self.cleanup()
 

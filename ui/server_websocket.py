@@ -1,4 +1,5 @@
 import json
+import time
 from flask import Flask, render_template
 from flask_sock import Sock
 
@@ -14,15 +15,27 @@ def index():
 
 db = DB()
 ds = DataSet()
-name = 'test_ui/0'
+name = 'test_ui'
 
 @sock.route('/echo')
 def echo(sock):
+    ds = DataSet()
+    points = db.read_all("pv_"+db.status['name']).data
+    cnt = 0
+    for point in points:
+        ds.append(point)
+        cnt += 1
+    if cnt:
+        output = json.dumps(ds.data)
+        sock.send(output)
     while True:
-        point = json.loads(db.conn.blpop(name)[1])
+        print("sock called!", db.status["running"])
+        if not db.status["running"]:
+            time.sleep(300)
+            continue
+        point = db.blpop(name)
         ds.append(point)
         output = json.dumps(ds.data)
-        db.conn.hset(name+"_pv", 'value', output)
         sock.send(output)
 
 if __name__ == '__main__':
