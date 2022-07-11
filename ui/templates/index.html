@@ -3,9 +3,10 @@
   <head>
     <title>Flask-Sock Demo</title>
     <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
   </head>
   <body>
-    <h1>Loss function</h1>
+    <h1 id="H1_model_name">{{model_name}}</h1>
     <form id="form">
       <label for="text">Model name: </label>
       <input type="text" id="text" autofocus>
@@ -46,12 +47,14 @@
       });
 
      
-//    document.getElementById('form').onsubmit = ev => {
-//      ev.preventDefault();
-//      const textField = document.getElementById('text');
-//      socket.send(textField.value);
-//      textField.value = '';
-//    };
+      document.getElementById('form').onsubmit = ev => {
+        ev.preventDefault();
+        const textField = document.getElementById('text');
+	$.post("/model_name", {"value": textField.value});
+//        socket.send(textField.value);
+	document.getElementById("H1_model_name").innerHTML = textField.value;
+        textField.value = '';
+      };
       
 
     </script>

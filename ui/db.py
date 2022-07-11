@@ -57,13 +57,19 @@ class DB(object):
         time.sleep(sec)
         return self
 
-    def blpop(self, key):
+    def blpop(self):
+        key = self.status["name"]
         while len(self.child) == 0:
             print("Waiting for task running!")
+            key = self.status["name"]
             self.get_child(key).wait(5)
         attr_comb = {}
         for k in self.child:
-            attr = self.conn.blpop(k)[1]
+            attr = self.conn.blpop(k, 60)
+            if attr is None:
+                return None
+            else:
+                attr = attr[1]
             attr = json.loads(attr)
             for i,j in attr.items():
 #               print(k,i, j)

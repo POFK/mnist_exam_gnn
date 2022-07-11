@@ -20,6 +20,7 @@ db = DB()
 
 class TaskManager(object):
     def __init__(self, name="test_ui", *args, **kwargs):
+        print(f"Start model {name}...")
         self.name = name
         self._rank = None
         self._world_size = None
@@ -174,6 +175,8 @@ class TaskManager(object):
         return CNT, LOSS, CORR
 
     def step(self, train_loader, test_loader):
+        if self.rank == 0:
+            db.conn.hset("status", "running", "True")
         tr_cnt, tr_loss = self.step_tr(train_loader)
         te_cnt, te_loss, te_corr = self.step_te(test_loader)
         data = {}
@@ -182,9 +185,8 @@ class TaskManager(object):
         data['te_loss'] = te_loss.item()/te_cnt
         data['acc'] = te_corr/te_cnt
         db.write(opj(self.name, str(self.rank)), data)
-#       if self.rank == 0:
-#           self._log_text = f"Epoch {self.epoch:02}: train loss {tr_loss/tr_cnt:.5}, test loss {te_loss/te_cnt:.5}, acc {te_corr/te_cnt:.5}"
-#       print(f"Epoch(rank {self.rank}) {self.epoch}: loss {te_loss/te_cnt}, acc {te_corr/te_cnt}")
+        if self.rank == 0:
+            self._log_text = f"Epoch {self.epoch:02}: train loss {tr_loss/tr_cnt:.5}, test loss {te_loss/te_cnt:.5}, acc {te_corr/te_cnt:.5}"
         return self
 
     def set_ds(self, ds):
@@ -224,7 +226,7 @@ class TaskManager(object):
 
         if self.rank == 0:
             db.conn.hset("status", "running", "False")
-            os.remove(self.cpt_path)
+#           os.remove(self.cpt_path)
         self.cleanup()
 
     def run(self, world_size, bs, init):
@@ -238,9 +240,9 @@ class TaskManager(object):
 
 
 if __name__ == '__main__':
-    tm = TaskManager(lr=1e-2)
+    tm = TaskManager(name="test-002", lr=1e-2, EPOCH=500)
     dataset = CustomMNISTDataset(root=os.path.join(os.path.expanduser('~'),"data"))
     tm._model = Net()
     tm._loss_fn = nn.CrossEntropyLoss()
-    #tm.set_ds(dataset).run(4, 1000, False)
+#   tm.set_ds(dataset).run(4, 1000, False)
     tm.set_ds(dataset).run(4, 1000, True)
